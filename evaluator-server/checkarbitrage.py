@@ -29,8 +29,11 @@ def arbitrage(table):
 
 
 def main():
-    df = pd.read_csv('tests/exchangerates.csv')
+    df = pd.read_csv('testdata/exchangerates.csv')
+    df['fixed-USD'] = df['USD'].map(lambda x: x.split('\n')[0])
     print(df.head())
+
+    
 
 
 if __name__ == "__main__":
