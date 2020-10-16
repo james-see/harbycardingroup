@@ -1,14 +1,16 @@
 # https://docs.google.com/spreadsheets/d/e/2PACX-1vTxynMcPL2TNhdKCmYZIOAvb5UzFifbp8Bd8Lunl5nDdAF7hlpQFLVleAZZNGIpYgEz3MauorJ3K3lN/pubhtml?gid=893179786&single=true
 
-import json, urllib2, sys, math
+import json, sys, math
 import networkx as nx
+
+from urllib.request import urlopen
 
 def grab_files(url="http://fx.priceonomics.com/v1/rates/"):
     try:
-        x = urllib2.urlopen(url).read()
+        x = urlopen(url).read()
         res = json.loads(x)
-    except Exception, e:
-        print >>sys.stderr, "Error getting rates:", e
+    except Exception as e:
+        print(sys.stderr, "Error getting rates:", e)
         sys.exit(1)
     return res
 
@@ -22,7 +24,10 @@ def build_graph(parsed_points):
     return dg
 
 def find_path(digraph, start="USD"):
-    path = nx.bellman_ford(digraph, start, return_negative_cycle=True)
+    try:
+        path = nx.single_source_bellman_ford_path(digraph, start)
+    except nx.exception.NetworkXUnbounded as e:
+        return path
     return path
 
 def output_path(path, g, start="USD"):
@@ -31,17 +36,17 @@ def output_path(path, g, start="USD"):
     pred = path[start]
     x = start
     while pred not in visited:
-        print pred, "-->", x, math.exp(-g[pred][x]['weight'])
+        print(pred, "-->", x, math.exp(-g[pred][x]['weight']))
         tot*=math.exp(-g[pred][x]['weight'])
         visited.add(pred)
         x = pred
         pred = path[pred]
     
     tot *= math.exp(-g[start][x]['weight'])
-    print start, "-->", x, math.exp(-g[start][x]['weight'])
-    print "Total:", tot
+    print(start, "-->", x, math.exp(-g[start][x]['weight']))
+    print("Total:", tot)
     if tot < 1.0:
-        print "Note: no arbitrage opportunity detected."
+        print("Note: no arbitrage opportunity detected.")
 
 def main():
     obj = grab_files()
